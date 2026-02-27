@@ -44,5 +44,6 @@ jobs:
               console.log(r.nodeLabel + ' v' + (r.version||'?') + ' ' + (r.responseTimeMs||'?') + 'ms' + (r.failover?' FAILOVER':''));
             ")
             git commit -m "poll: ${LAST}"
+            git pull --rebase origin main
             git push
           fi
