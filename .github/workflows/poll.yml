@@ -1,28 +1,47 @@
-// ─── Parse footer ────────────────────────────────────────────────
-// Matches: "9.14.7-i068 | 3 ms" (with possible HTML tags around/between elements)
-function parseFooter(html) {
-  // Strip HTML tags and decode common entities
-  const text = html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&#\d+;/g, " ")
-    .replace(/\s+/g, " ");
+name: Poll EU Login Node
 
-  // Primary: full pattern with version, node, and response time
-  const m = text.match(/(\d+\.\d+\.\d+(?:\.\d+)?)\s*[-–]\s*(i\d{3})\s*\|\s*(\d+)\s*ms/i);
-  if (m) {
-    return { version: m[1], nodeShortId: m[2].toLowerCase(), responseTimeMs: parseInt(m[3], 10) };
-  }
+on:
+  schedule:
+    - cron: '0 7,13,19 * * 1-5'
+  workflow_dispatch:
 
-  // Secondary: version and node without response time
-  const m2 = text.match(/(\d+\.\d+\.\d+(?:\.\d+)?)\s*[-–]\s*(i\d{3})/i);
-  if (m2) {
-    return { version: m2[1], nodeShortId: m2[2].toLowerCase(), responseTimeMs: null };
-  }
+permissions:
+  contents: write
 
-  // Fallback: just the node ID
-  const fb = text.match(/\b(i0(?:67|68|69))\b/i);
-  if (fb) return { version: null, nodeShortId: fb[1].toLowerCase(), responseTimeMs: null };
-  return null;
-}
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Poll EU Login
+        run: node scripts/poll.js
+        env:
+          EULOGIN_URL: ${{ vars.EULOGIN_URL || 'https://webgate.ec.europa.eu/cas/' }}
+
+      - name: Commit & Push
+        run: |
+          git config user.name "EU Login Tracker Bot"
+          git config user.email "tracker-bot@users.noreply.github.com"
+          git add data/rotation-history.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            LAST=$(node -e "
+              const d = require('./data/rotation-history.json');
+              const r = d.records[d.records.length-1];
+              console.log(r.nodeLabel + ' v' + (r.version||'?') + ' ' + (r.responseTimeMs||'?') + 'ms' + (r.failover?' FAILOVER':''));
+            ")
+            git commit -m "poll: ${LAST}"
+            git pull --rebase origin main
+            git push
+          fi
