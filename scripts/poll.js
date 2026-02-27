@@ -55,14 +55,30 @@ function fetchPage(url, redirects = 0) {
 }
 
 // ─── Parse footer ────────────────────────────────────────────────
-// Matches: "9.14.7-i068 | 3 ms"
+// Matches: "9.14.7-i068 | 3 ms" (with possible HTML tags around/between elements)
 function parseFooter(html) {
-  const m = html.match(/(\d+\.\d+\.\d+(?:\.\d+)?)\s*-\s*(i\d{3})\s*\|\s*(\d+)\s*ms/i);
+  // Strip HTML tags and decode common entities
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#\d+;/g, " ")
+    .replace(/\s+/g, " ");
+
+  // Primary: full pattern with version, node, and response time
+  const m = text.match(/(\d+\.\d+\.\d+(?:\.\d+)?)\s*[-–]\s*(i\d{3})\s*\|\s*(\d+)\s*ms/i);
   if (m) {
     return { version: m[1], nodeShortId: m[2].toLowerCase(), responseTimeMs: parseInt(m[3], 10) };
   }
-  // Fallback: just find iXXX
-  const fb = html.match(/\b(i0(?:67|68|69))\b/i);
+
+  // Secondary: version and node without response time
+  const m2 = text.match(/(\d+\.\d+\.\d+(?:\.\d+)?)\s*[-–]\s*(i\d{3})/i);
+  if (m2) {
+    return { version: m2[1], nodeShortId: m2[2].toLowerCase(), responseTimeMs: null };
+  }
+
+  // Fallback: just the node ID
+  const fb = text.match(/\b(i0(?:67|68|69))\b/i);
   if (fb) return { version: null, nodeShortId: fb[1].toLowerCase(), responseTimeMs: null };
   return null;
 }
