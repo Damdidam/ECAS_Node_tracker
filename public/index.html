@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EU Login — Node Rotation Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#0a0a0a;--sf:#111;--bd:#1a1a1a;--bl:#2a2a2a;
+      --tx:#e0e0e0;--dm:#888;--mt:#555;
+      --c067:#E8C547;--c068:#47B5E8;--c069:#E86447;
+      --ok:#2ecc40;--err:#ff4136;
+    }
+    body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+    body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:999}
+    a{color:inherit}
+
+    .hd{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--bd);background:#0d0d0d}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok);transition:.3s}
+    .logo-dot.warn{background:var(--err);box-shadow:0 0 12px var(--err);animation:pulse 1s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .logo-t{font-size:22px;font-weight:800;letter-spacing:3px;color:#fff}
+    .logo-s{font-size:10px;letter-spacing:2px;color:#666;text-transform:uppercase}
+    .hdr{display:flex;align-items:center;gap:12px}
+    .mono{font-family:'JetBrains Mono',monospace}
+    .clock{font-size:12px;color:var(--dm)}
+    .vbadge{font-size:10px;padding:4px 10px;border-radius:4px;background:var(--bd);color:var(--dm);border:1px solid var(--bl)}
+
+    .alert{display:none;align-items:center;gap:10px;padding:12px 24px;background:linear-gradient(90deg,rgba(255,65,54,.06),rgba(255,65,54,.02));border-bottom:1px solid rgba(255,65,54,.2);color:#ff6b5f;font-size:13px}
+    .alert.on{display:flex}
+    .alert svg{flex-shrink:0;width:18px;height:18px}
+
+    .ib{display:flex;gap:24px;padding:12px 24px;border-bottom:1px solid var(--bd);font-size:12px;color:var(--dm);flex-wrap:wrap}
+    .ib-i{display:flex;align-items:center;gap:6px}
+    .ib-i svg{width:14px;height:14px;color:var(--mt)}
+    .ib-v{color:var(--tx)}
+
+    .sec{padding:20px 24px}
+    .st{font-size:11px;letter-spacing:2.5px;color:var(--mt);text-transform:uppercase;margin-bottom:16px;font-weight:600}
+
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .cd{padding:16px;border-radius:8px;border:1px solid var(--bl);background:var(--sf);transition:.2s}
+    .cd.m{background:linear-gradient(135deg,rgba(255,255,255,.02),rgba(255,255,255,.05))}
+    .cd-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px rgba(46,204,64,.5)}
+    .cd-n{font-size:13px;font-weight:600;color:#ccc}
+    .cd-host{font-size:11px;color:var(--mt);margin-left:auto}
+    .cd-r{font-size:20px;letter-spacing:2px;color:var(--mt);font-weight:400}
+    .cd-r.im{font-weight:800}
+    .cd-since{font-size:12px;color:var(--dm);margin-top:4px}
+
+    .nav{display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--bd)}
+    .nb{padding:10px 18px;background:none;border:none;color:#666;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;font-family:inherit;display:flex;align-items:center;gap:6px}
+    .nb:hover{color:#aaa}
+    .nb.on{color:var(--c067);border-bottom-color:var(--c067)}
+    .nb svg{width:14px;height:14px}
+
+    .lg{display:flex;gap:20px;margin-bottom:16px;font-size:12px;color:#999}
+    .lg-i{display:flex;align-items:center;gap:6px}
+    .lg-d{width:10px;height:10px;border-radius:2px}
+
+    .tl-g{display:flex;flex-direction:column;gap:3px}
+    .tl-r{display:flex;align-items:center;gap:12px}
+    .tl-l{width:60px;font-size:11px;color:#666;text-align:right;flex-shrink:0}
+    .tl-c{display:flex;gap:4px;flex:1}
+    .tl-x{width:28px;height:28px;border-radius:4px;cursor:pointer;transition:.15s;opacity:.85}
+    .tl-x:hover{opacity:1;transform:scale(1.15)}
+    .tip{margin-top:12px;padding:8px 14px;background:var(--bd);border:1px solid var(--bl);border-radius:6px;font-size:12px;color:#ccc;display:inline-block;min-height:34px}
+
+    .gt{position:relative;height:80px;background:var(--sf);border-radius:8px;border:1px solid var(--bd);overflow:hidden}
+    .gb{position:absolute;height:48px;border-radius:4px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;font-weight:700;overflow:hidden;white-space:nowrap;border:1px solid rgba(0,0,0,.2);cursor:default}
+    .ga{display:flex;justify-content:space-between;font-size:11px;color:var(--mt);margin-top:6px;padding:0 4px}
+
+    .sg{display:flex;flex-direction:column;gap:16px}
+    .sn{font-size:13px;color:#aaa;margin-bottom:8px;font-weight:500}
+    .sb{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin-bottom:6px}
+    .sf{height:100%;border-radius:4px;transition:width .6s}
+    .sv{display:flex;justify-content:space-between;font-size:13px}
+    .sn2{margin-top:20px;padding:12px 16px;background:var(--sf);border-radius:6px;border:1px solid var(--bd);font-size:13px;color:var(--dm)}
+    .rt-t{font-size:12px;color:var(--mt);margin-top:16px;margin-bottom:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+
+    .lt{border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+    .lh{display:flex;padding:10px 16px;background:var(--sf);font-size:11px;letter-spacing:1px;color:var(--mt);text-transform:uppercase;font-weight:600}
+    .lb{max-height:450px;overflow-y:auto}
+    .lr{display:flex;padding:8px 16px;font-size:12px;border-bottom:1px solid #0f0f0f;align-items:center;border-left:3px solid transparent}
+    .lr.fo{background:rgba(232,197,71,.04)}
+    .tg{padding:2px 10px;border-radius:3px;font-size:11px;font-weight:700;color:#000;letter-spacing:.5px}
+    .fb{margin-left:8px;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;background:rgba(255,65,54,.13);color:#ff6b5f;border:1px solid rgba(255,65,54,.27)}
+    .c1{flex:2}.c2{flex:1.5}.c3{flex:1}.c4{flex:1}.c5{flex:.7}
+
+    .ft{display:flex;justify-content:space-between;padding:16px 24px;border-top:1px solid var(--bd);font-size:11px;color:#444;margin-top:20px}
+    .vw{display:none}.vw.on{display:block}
+    .ld{text-align:center;padding:60px;color:var(--mt);font-size:14px}
+    .sp{width:24px;height:24px;border:2px solid var(--bl);border-top-color:var(--c067);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .em{text-align:center;padding:40px;color:var(--mt);font-size:13px}
+
+    @media(max-width:700px){.cards{grid-template-columns:1fr}.hd{flex-direction:column;gap:12px;align-items:flex-start}.ib{flex-wrap:wrap;gap:12px}}
+  </style>
+</head>
+<body>
+
+<header class="hd">
+  <div class="logo">
+    <div class="logo-dot" id="sDot"></div>
+    <span class="logo-t">EU LOGIN</span>
+    <span class="logo-s">NODE ROTATION TRACKER</span>
+  </div>
+  <div class="hdr">
+    <span class="clock mono" id="clock"></span>
+    <span class="vbadge mono" id="vb">v--</span>
+  </div>
+</header>
+
+<div class="alert" id="al">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <span id="alMsg"></span>
+</div>
+
+<div class="ib" id="ib">
+  <div class="ib-i">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    CAS Version: <span class="ib-v mono" id="iVer">--</span>
+  </div>
+  <div class="ib-i">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Response: <span class="ib-v mono" id="iRt">--</span>
+  </div>
+  <div class="ib-i">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    Active Node: <span class="ib-v mono" id="iNode">--</span>
+  </div>
+  <div class="ib-i">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    Last Poll: <span class="ib-v mono" id="iLast">--</span>
+  </div>
+</div>
+
+<section class="sec">
+  <h2 class="st">CURRENT CLUSTER STATUS</h2>
+  <div class="cards" id="cards"></div>
+</section>
+
+<nav class="nav" id="nav">
+  <button class="nb on" data-v="tl">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Timeline
+  </button>
+  <button class="nb" data-v="ga">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="12" height="4" rx="1"/><rect x="7" y="10" width="14" height="4" rx="1"/><rect x="5" y="17" width="10" height="4" rx="1"/></svg>Gantt
+  </button>
+  <button class="nb" data-v="ss">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Stats
+  </button>
+  <button class="nb" data-v="lg">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>Log
+  </button>
+</nav>
+
+<div class="vw on" id="v-tl"><section class="sec">
+  <h2 class="st">TIMELINE — LAST 21 DAYS</h2>
+  <div class="lg" id="lg1"></div>
+  <div class="tl-g" id="tlG"></div>
+  <div class="tip mono" id="tlT" style="visibility:hidden">Hover a cell</div>
+</section></div>
+
+<div class="vw" id="v-ga"><section class="sec">
+  <h2 class="st">GANTT VIEW — MASTER PERIODS</h2>
+  <div class="lg" id="lg2"></div>
+  <div class="gt" id="gTrack"></div>
+  <div class="ga" id="gAxis"></div>
+</section></div>
+
+<div class="vw" id="v-ss"><section class="sec">
+  <h2 class="st">MASTER DISTRIBUTION</h2>
+  <div class="sg" id="ssG"></div>
+  <div class="sn2"><strong>Goal:</strong> a balanced distribution (~33% each) indicates healthy master rotation.</div>
+  <div class="rt-t">AVERAGE RESPONSE TIME PER NODE</div>
+  <div class="sg" id="rtG"></div>
+</section></div>
+
+<div class="vw" id="v-lg"><section class="sec">
+  <h2 class="st">CHECK HISTORY</h2>
+  <div class="lt">
+    <div class="lh"><span class="c1">Timestamp</span><span class="c2">Node</span><span class="c3">Version</span><span class="c4">Response</span><span class="c5">Status</span></div>
+    <div class="lb" id="lBody"></div>
+  </div>
+</section></div>
+
+<div class="ld" id="loading"><div class="sp"></div>Loading history...</div>
+<footer class="ft"><span>EU Login Node Rotation Tracker v1.0</span><span id="fInfo" style="color:#555"></span></footer>
+
+<script>
+const N=[
+  {short:"i067",label:"IDT067",host:"idt183067"},
+  {short:"i068",label:"IDT068",host:"idt183068"},
+  {short:"i069",label:"IDT069",host:"idt183069"},
+];
+const C={i067:"#E8C547",i068:"#47B5E8",i069:"#E86447"};
+const AD=7;
+let R=[];
+
+// ── Load JSON (static file, same directory on GitHub Pages) ─────
+async function load(){
+  try{
+    // Try relative path (GitHub Pages deploys JSON alongside HTML)
+    let r=await fetch("rotation-history.json");
+    if(!r.ok) r=await fetch("data/rotation-history.json"); // local dev fallback
+    if(!r.ok) r=await fetch("/api/history"); // server fallback
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    R=(d.records||[]).filter(x=>x.status==="OK"&&x.nodeShortId);
+  }catch(e){console.error("Load failed:",e);R=[]}
+}
+
+const fD=i=>new Date(i).toLocaleDateString("en-GB",{day:"2-digit",month:"short"});
+const fT=i=>new Date(i).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+const fF=i=>new Date(i).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+function tA(d){const ms=Date.now()-new Date(d).getTime(),dd=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5);return dd>0?`${dd}d ${hh}h`:`${hh}h`}
+function mS(){
+  if(!R.length)return null;
+  const c=R[R.length-1].nodeShortId;let s=R[R.length-1].timestamp;
+  for(let i=R.length-2;i>=0;i--){if(R[i].nodeShortId!==c)break;s=R[i].timestamp}
+  return{short:c,since:s};
+}
+function leg(id){$(id).innerHTML=N.map(n=>`<span class="lg-i"><span class="lg-d" style="background:${C[n.short]}"></span>${n.label} <span class="mono" style="color:var(--mt)">(${n.host})</span></span>`).join("")}
+const $=id=>document.getElementById(id);
+
+function rStatus(){
+  $("clock").textContent=fF(new Date().toISOString());
+  if(!R.length){$("cards").innerHTML='<div class="em" style="grid-column:1/-1">No data yet. Trigger the GitHub Action to start polling.</div>';return}
+  const l=R[R.length-1],ms=mS(),days=Math.floor((Date.now()-new Date(ms.since).getTime())/864e5),isW=days>=AD;
+  $("sDot").className="logo-dot"+(isW?" warn":"");
+  const al=$("al");if(isW){al.classList.add("on");$("alMsg").innerHTML=`<strong>${l.nodeLabel}</strong> has been master for <strong>${days} days</strong> — rotation recommended!`}else al.classList.remove("on");
+  $("iVer").textContent=l.version||"--";$("vb").textContent="v"+(l.version||"--");
+  $("iRt").textContent=l.responseTimeMs!=null?l.responseTimeMs+" ms":"--";
+  $("iNode").textContent=`${l.nodeLabel} (${l.nodeHost})`;
+  $("iLast").textContent=fF(l.timestamp);
+  $("cards").innerHTML=N.map(n=>{
+    const m=n.short===l.nodeShortId,c=C[n.short];
+    return`<div class="cd${m?" m":""}" style="border-color:${m?c:"var(--bl)"};${m?`background:linear-gradient(135deg,${c}08,${c}15)`:""}">
+      <div class="cd-h"><div class="dot"></div><span class="cd-n">${n.label}</span><span class="cd-host mono">${n.host}</span></div>
+      <div class="cd-r${m?" im":""}" style="color:${m?c:"var(--mt)"}">${m?"MASTER":"SLAVE"}</div>
+      ${m?`<div class="cd-since">Master for: <strong>${tA(ms.since)}</strong></div>`:""}
+    </div>`}).join("");
+}
+
+function rTL(){
+  leg("lg1");const g=$("tlG"),gr={};
+  R.forEach(r=>{const d=fD(r.timestamp);if(!gr[d])gr[d]=[];gr[d].push(r)});
+  const days=Object.entries(gr).slice(-21);
+  g.innerHTML=days.map(([d,rs])=>`<div class="tl-r"><div class="tl-l mono">${d}</div><div class="tl-c">${rs.map(r=>`<div class="tl-x" style="background:${C[r.nodeShortId]||"#333"}" data-t="${fF(r.timestamp)} | ${r.nodeLabel} (${r.nodeHost}) | v${r.version||"?"} | ${r.responseTimeMs??"?"}ms" onmouseenter="sT(this)" onmouseleave="hT()"></div>`).join("")}</div></div>`).join("");
+  if(!days.length)g.innerHTML='<div class="em">No data yet.</div>';
+}
+window.sT=el=>{const t=$("tlT");t.textContent=el.dataset.t;t.style.visibility="visible"};
+window.hT=()=>$("tlT").style.visibility="hidden";
+
+function rGantt(){
+  leg("lg2");const tk=$("gTrack"),ax=$("gAxis");
+  if(!R.length){tk.innerHTML='<div class="em" style="padding:20px">No data.</div>';return}
+  const sp=[];let cu=null;
+  R.forEach(r=>{if(!cu||cu.s!==r.nodeShortId){if(cu)cu.e=r.timestamp;cu={s:r.nodeShortId,l:r.nodeLabel,st:r.timestamp,e:r.timestamp};sp.push(cu)}else cu.e=r.timestamp});
+  const s0=new Date(R[0].timestamp).getTime(),e0=Date.now(),rg=e0-s0||1;
+  tk.innerHTML=sp.map(s=>{
+    const l=((new Date(s.st).getTime()-s0)/rg)*100,w=Math.max(((new Date(s.e).getTime()-new Date(s.st).getTime())/rg)*100,.5),c=C[s.s]||"#666";
+    return`<div class="gb" style="left:${l}%;width:${w}%;background:linear-gradient(90deg,${c}cc,${c})" title="${s.l}: ${fF(s.st)} → ${fF(s.e)}">${w>8?s.l:""}</div>`}).join("");
+  ax.innerHTML=`<span>${fD(R[0].timestamp)}</span><span>Today</span>`;
+}
+
+function rStats(){
+  const g=$("ssG"),rg=$("rtG");
+  if(!R.length){g.innerHTML='<div class="em">No data.</div>';rg.innerHTML="";return}
+  const sp=[];let cu=null;
+  R.forEach(r=>{if(!cu||cu.s!==r.nodeShortId){if(cu)cu.e=r.timestamp;cu={s:r.nodeShortId,st:r.timestamp,e:r.timestamp};sp.push(cu)}else cu.e=r.timestamp});
+  const nd={};N.forEach(n=>nd[n.short]=0);
+  sp.forEach(s=>{nd[s.s]=(nd[s.s]||0)+Math.max((new Date(s.e)-new Date(s.st))/864e5,.04)});
+  const tot=Object.values(nd).reduce((a,b)=>a+b,0)||1;
+  g.innerHTML=N.map(n=>{const p=((nd[n.short]/tot)*100).toFixed(1),c=C[n.short];
+    return`<div><div class="sn">${n.label} — ${n.host}</div><div class="sb"><div class="sf" style="width:${p}%;background:linear-gradient(90deg,${c}99,${c})"></div></div><div class="sv"><span style="color:${c};font-weight:700">${p}%</span><span style="color:#666">${nd[n.short].toFixed(1)} days as master</span></div></div>`}).join("");
+  const rs={},rc={};N.forEach(n=>{rs[n.short]=0;rc[n.short]=0});
+  R.forEach(r=>{if(r.responseTimeMs!=null){rs[r.nodeShortId]=(rs[r.nodeShortId]||0)+r.responseTimeMs;rc[r.nodeShortId]=(rc[r.nodeShortId]||0)+1}});
+  const mx=Math.max(...N.map(n=>rc[n.short]?rs[n.short]/rc[n.short]:0),1);
+  rg.innerHTML=N.map(n=>{const a=rc[n.short]?(rs[n.short]/rc[n.short]).toFixed(1):"-",p=a!=="-"?((parseFloat(a)/mx)*100).toFixed(1):"0",c=C[n.short];
+    return`<div><div class="sn">${n.label}</div><div class="sb"><div class="sf" style="width:${p}%;background:linear-gradient(90deg,${c}99,${c})"></div></div><div class="sv"><span style="color:${c};font-weight:700">${a} ms</span><span style="color:#666">${rc[n.short]} samples</span></div></div>`}).join("");
+}
+
+function rLog(){
+  const b=$("lBody");if(!R.length){b.innerHTML='<div class="em">No records.</div>';return}
+  const rv=[...R].reverse().slice(0,150);
+  b.innerHTML=rv.map((r,i)=>{const p=rv[i+1],fo=p&&p.nodeShortId!==r.nodeShortId,c=C[r.nodeShortId]||"#666";
+    return`<div class="lr${fo?" fo":""}" style="${fo?`border-left-color:${c}`:""}">
+      <span class="c1 mono">${fF(r.timestamp)}</span>
+      <span class="c2"><span class="tg" style="background:${c}">${r.nodeLabel}</span>${fo?'<span class="fb">FAILOVER</span>':""}</span>
+      <span class="c3 mono">${r.version||"--"}</span>
+      <span class="c4 mono">${r.responseTimeMs!=null?r.responseTimeMs+" ms":"--"}</span>
+      <span class="c5" style="color:var(--ok)">OK</span>
+    </div>`}).join("");
+}
+
+function renderAll(){
+  $("loading").style.display="none";
+  rStatus();rTL();rGantt();rStats();rLog();
+  $("fInfo").textContent=R.length?`${R.length} records — Last: ${fF(R[R.length-1].timestamp)}`:"No data";
+}
+
+$("nav").addEventListener("click",e=>{
+  const b=e.target.closest(".nb");if(!b)return;
+  document.querySelectorAll(".nb").forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  document.querySelectorAll(".vw").forEach(x=>x.classList.remove("on"));
+  $("v-"+b.dataset.v).classList.add("on");
+});
+
+(async()=>{await load();renderAll()})();
+</script>
+</body>
+</html>

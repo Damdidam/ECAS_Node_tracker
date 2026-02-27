@@ -1,0 +1,11 @@
+{
+  "name": "ecas-node-tracker",
+  "version": "1.0.0",
+  "description": "EU Login Node Rotation Tracker — zero-infra monitoring via GitHub Actions + Pages",
+  "private": true,
+  "scripts": {
+    "poll": "node scripts/poll.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {}
+}
