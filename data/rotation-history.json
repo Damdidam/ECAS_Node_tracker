@@ -2408,7 +2408,18 @@
       "responseTimeMs": null,
       "failover": false,
       "error": "HTTP 503"
+    },
+    {
+      "timestamp": "2026-05-10T14:19:16.752Z",
+      "status": "OK",
+      "nodeShortId": "i068",
+      "nodeLabel": "IDT068",
+      "nodeHost": "idt183068",
+      "version": "9.14.8",
+      "responseTimeMs": 1,
+      "failover": false,
+      "error": null
     }
   ],
-  "lastUpdated": "2026-05-10T08:52:53.325Z"
+  "lastUpdated": "2026-05-10T14:19:16.752Z"
 }
