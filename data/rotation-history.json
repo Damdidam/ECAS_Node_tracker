@@ -2397,7 +2397,18 @@
       "responseTimeMs": 2,
       "failover": false,
       "error": null
+    },
+    {
+      "timestamp": "2026-05-10T08:52:53.325Z",
+      "status": "FETCH_ERROR",
+      "nodeShortId": null,
+      "nodeLabel": null,
+      "nodeHost": null,
+      "version": null,
+      "responseTimeMs": null,
+      "failover": false,
+      "error": "HTTP 503"
     }
   ],
-  "lastUpdated": "2026-05-09T19:56:26.148Z"
+  "lastUpdated": "2026-05-10T08:52:53.325Z"
 }
