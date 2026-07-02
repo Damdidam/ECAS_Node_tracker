@@ -4124,7 +4124,18 @@
       "responseTimeMs": 2,
       "failover": false,
       "error": null
+    },
+    {
+      "timestamp": "2026-07-02T15:13:46.773Z",
+      "status": "OK",
+      "nodeShortId": "i067",
+      "nodeLabel": "IDT067",
+      "nodeHost": "idt183067",
+      "version": "9.15.0",
+      "responseTimeMs": 2,
+      "failover": false,
+      "error": null
     }
   ],
-  "lastUpdated": "2026-07-02T10:09:17.047Z"
+  "lastUpdated": "2026-07-02T15:13:46.773Z"
 }
